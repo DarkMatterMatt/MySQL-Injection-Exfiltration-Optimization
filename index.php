@@ -4,6 +4,8 @@ $username = 'root';
 $password = 'root';
 $dbname = 'jwt_extract';
 
+// CREATE TABLE main (id INT, jwt VARCHAR(8192), PRIMARY KEY (id))
+
 // Create connection
 $conn = new mysqli($servername, $username, $password, $dbname);
 // Check connection
