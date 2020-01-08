@@ -6,7 +6,7 @@ import time
 ## Config
 
 # The target URL. Must contain '$payload$' where the payload will be inserted.
-TARGET = "http://localhost/?id=2$payload"
+TARGET = "http://localhost/?id=2$payload$"
 
 # The payload, which must sleep if (JWT_Char = $char$). Must contain '$index$' and
 #   '$char$' where the index being tested and current test character will be inserted.
