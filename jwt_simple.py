@@ -81,4 +81,7 @@ if __name__ == "__main__":
         print("Missing '$char$' in PAYLOAD config string.")
         sys.exit(3)
 
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nCancelled by user")

