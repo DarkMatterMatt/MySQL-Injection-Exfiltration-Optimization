@@ -58,7 +58,7 @@ def query_bits(bits=8, **kwargs):
 
 
 def main():
-    print("[+] Retriving data...")
+    print("[+] Retrieving data...")
 
     # find length of data
     length = query_bits(32, payload=LENGTH_PAYLOAD)
